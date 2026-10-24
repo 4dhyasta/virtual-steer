@@ -1,0 +1,27 @@
+name: Build IPA
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - name: Build (tanpa signing)
+        run: |
+          xcodebuild -project VirtualSteer.xcodeproj -scheme VirtualSteer \
+            -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
+      - name: Bikin .ipa
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/VirtualSteer.app Payload/
+          zip -qr VirtualSteer.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VirtualSteer-ipa
+          path: VirtualSteer.ipa
