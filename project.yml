@@ -1,0 +1,27 @@
+name: VirtualSteer
+options:
+  deploymentTarget:
+    iOS: "16.0"
+targets:
+  VirtualSteer:
+    type: application
+    platform: iOS
+    sources: [VirtualSteer]
+    info:
+      path: Config/Info.plist
+      properties:
+        CFBundleDisplayName: Virtual Steer
+        UILaunchScreen: {}
+        UIRequiresFullScreen: true
+        UIStatusBarHidden: true
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.virtualsteer.app
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        TARGETED_DEVICE_FAMILY: "1"
+        SWIFT_VERSION: "5.0"
+        MARKETING_VERSION: "1.0"
+        CURRENT_PROJECT_VERSION: "1"
