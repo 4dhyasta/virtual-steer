@@ -11,8 +11,9 @@ Turn your iPhone into a steering wheel for your PC.
 2. Extract the `.zip` file.
 3. Install the `.ipa` file from the extracted folder onto your iPhone using [Sideloadly](https://sideloadly.io/), [SideStore](https://sidestore.io/), or [AltStore](https://altstore.io/).
 4. Connect your iPhone to your PC using a USB cable.
-5. Launch `start.bat`.
-6. Enjoy! Your iPhone should now be detected by your PC as an **Xbox 360 controller (XInput)**.
+5. Launch `start.bat` on your PC.
+7. Launch `VirtualSteer` app on your iPhone.
+8. Enjoy! Your iPhone should now be detected by your PC as an **Xbox 360 controller (XInput)**.
 
 ## Additional
 
