@@ -3,7 +3,7 @@
 Turn your iPhone into a steering wheel for your PC.
 
 > [!CAUTION]
-> **Compatibility Notice:** This project currently only works on Windows 10 and iOS 16 or later.
+> **Compatibility Notice:** This project currently only works on Windows 10 or later and iOS 16 or later.
 
 ## Tutorial
 
