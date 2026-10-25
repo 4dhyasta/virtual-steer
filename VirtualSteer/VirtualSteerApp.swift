@@ -9,12 +9,13 @@ struct VirtualSteerApp: App {
 
 struct ContentView: View {
     @ObservedObject private var hub = Hub.shared
+    @AppStorage("layout") private var layout = 1
 
     var body: some View {
         ZStack(alignment: .top) {
-            Surface().ignoresSafeArea()
+            Surface(layout: layout, paused: hub.showSettings).ignoresSafeArea()
             if !hub.connected {
-                Text("Nunggu PC lewat kabel...")
+                Text("Waiting for PC over USB...")
                     .font(.footnote)
                     .foregroundColor(.gray)
                     .padding(.top, 10)
@@ -35,20 +36,39 @@ struct ContentView: View {
     }
 }
 
-// Muncul kalau gear up + gear down ditahan barengan 1,2 detik.
+// Opens when both gear buttons are held together for 1.2 seconds.
 struct SettingsView: View {
-    @AppStorage("range") private var range = 90.0
+    @AppStorage("layout") private var layout = 1
+    @AppStorage("range") private var gyroRange = 90.0
     @AppStorage("invert") private var invert = false
+    @AppStorage("wheelRange") private var wheelRange = 120.0
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        Form {
-            Section("Putaran HP buat full lock: \(Int(range))°") {
-                Slider(value: $range, in: 30...360, step: 5)
+        NavigationStack {
+            Form {
+                Section("Layout") {
+                    Picker("Layout", selection: $layout) {
+                        Text("1 - Columns + gyro").tag(1)
+                        Text("2 - On-screen wheel").tag(2)
+                    }
+                    .pickerStyle(.segmented)
+                }
+                Section("Gyro steering (layout 1): \(Int(gyroRange))° for full lock") {
+                    Slider(value: $gyroRange, in: 30...360, step: 5)
+                    Toggle("Reverse direction", isOn: $invert)
+                    Button("Recenter gyro") { Hub.shared.recenter(); dismiss() }
+                }
+                Section("Wheel rotation (layout 2): \(Int(wheelRange))° for full lock") {
+                    Slider(value: $wheelRange, in: 45...360, step: 5)
+                }
             }
-            Toggle("Balik arah belok", isOn: $invert)
-            Button("Center ulang setir") { Hub.shared.recenter(); dismiss() }
-            Button("Selesai") { dismiss() }
+            .navigationTitle("Settings")
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") { dismiss() }
+                }
+            }
         }
     }
 }
