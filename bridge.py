@@ -1,10 +1,13 @@
 """
-Sisi PC: nyambung ke app Virtual Steer di iPhone lewat kabel USB (usbmuxd),
-terus bikin controller Xbox 360 virtual.
+PC side: connects to the Virtual Steer app on the iPhone over the USB cable (usbmuxd)
+and exposes a virtual Xbox 360 controller.
 
-Butuh (Windows): iTunes atau Apple Devices (ada Apple Mobile Device Service),
+Needs (Windows): iTunes or Apple Devices (installs Apple Mobile Device Service)
                  pip install vgamepad
-Jalanin: python bridge.py   (app Virtual Steer harus kebuka di iPhone)
+Run:             python bridge.py   (the Virtual Steer app must be open on the iPhone)
+
+Mapping: steering = left stick X, throttle = RT, brake = LT,
+         gear up = RB, gear down = LB, handbrake = X
 """
 import argparse
 import os
@@ -14,7 +17,7 @@ import struct
 import sys
 import time
 
-MUX_PORT = 27015  # usbmuxd di Windows = TCP localhost; di macOS/Linux = /var/run/usbmuxd
+MUX_PORT = 27015  # usbmuxd on Windows = TCP localhost; on macOS/Linux = /var/run/usbmuxd
 
 
 def mux_connect():
@@ -31,7 +34,7 @@ def recvn(s, n):
     while len(buf) < n:
         chunk = s.recv(n - len(buf))
         if not chunk:
-            raise ConnectionError("usbmuxd nutup")
+            raise ConnectionError("usbmuxd closed the connection")
         buf += chunk
     return buf
 
@@ -52,7 +55,7 @@ def open_tunnel(port):
         s.close()
     usb = [d for d in devices if d.get("Properties", {}).get("ConnectionType") == "USB"]
     if not usb:
-        raise LookupError("iPhone belum kedeteksi lewat USB (colok kabel, tap Trust)")
+        raise LookupError("iPhone not detected over USB (plug in the cable and tap Trust)")
     s = mux_connect()
     reply = mux_call(s, {
         "MessageType": "Connect",
@@ -61,7 +64,7 @@ def open_tunnel(port):
     })
     if reply.get("Number") != 0:
         s.close()
-        raise ConnectionRefusedError("app Virtual Steer belum kebuka di iPhone")
+        raise ConnectionRefusedError("Virtual Steer app is not open on the iPhone")
     return s
 
 
@@ -76,9 +79,10 @@ def main():
     import vgamepad as vg
 
     pad = vg.VX360Gamepad()
-    btn = {"u": vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER,   # gear up = RB
-           "d": vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER}    # gear down = LB
-    held = {"u": False, "d": False}
+    btn = {"u": vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER,   # gear up   = RB
+           "d": vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER,    # gear down = LB
+           "h": vg.XUSB_BUTTON.XUSB_GAMEPAD_X}                # handbrake = X
+    held = {"u": False, "d": False, "h": False}
 
     def set_button(k, down):
         if down and not held[k]:
@@ -87,16 +91,17 @@ def main():
             pad.release_button(button=btn[k])
         held[k] = down
 
-    def apply(steer, gas, brake, up, down):
+    def apply(steer, gas, brake, up, down, hand):
         pad.left_joystick_float(x_value_float=max(-1.0, min(1.0, steer)), y_value_float=0.0)
         pad.right_trigger_float(value_float=max(0.0, min(1.0, gas)))
         pad.left_trigger_float(value_float=max(0.0, min(1.0, brake)))
         set_button("u", up)
         set_button("d", down)
+        set_button("h", hand)
         pad.update()
 
     def neutral():
-        apply(0.0, 0.0, 0.0, False, False)
+        apply(0.0, 0.0, 0.0, False, False, False)
 
     last_msg = None
     while True:
@@ -104,12 +109,12 @@ def main():
             sock = open_tunnel(args.port)
         except (OSError, LookupError) as e:
             if str(e) != last_msg:
-                print(f"{e} - nunggu...")
+                print(f"{e} - waiting...")
                 last_msg = str(e)
             time.sleep(1)
             continue
         last_msg = None
-        print("Nyambung ke iPhone (lewat kabel)")
+        print("Connected to iPhone over USB")
         try:
             sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
         except OSError:
@@ -121,7 +126,7 @@ def main():
                 try:
                     chunk = sock.recv(4096)
                 except socket.timeout:
-                    neutral()          # HP diem >1 dtk = lepas semua input
+                    neutral()          # phone silent for >1 s = release every input
                     continue
                 if not chunk:
                     break
@@ -129,17 +134,18 @@ def main():
                 if b"\n" not in buf:
                     continue
                 *lines, buf = buf.split(b"\n")
-                try:    # cuma pake state terbaru biar ga numpuk (minim delay)
-                    s, g, b, u, d = lines[-1].split()
-                    apply(float(s), float(g), float(b), u == b"1", d == b"1")
-                except ValueError:
+                try:    # only use the newest state so nothing piles up (minimum delay)
+                    p = lines[-1].split()
+                    apply(float(p[0]), float(p[1]), float(p[2]),
+                          p[3] == b"1", p[4] == b"1", len(p) > 5 and p[5] == b"1")
+                except (ValueError, IndexError):
                     pass
         except OSError:
             pass
         finally:
             sock.close()
             neutral()
-            print("Putus, nyambung ulang...")
+            print("Disconnected, reconnecting...")
 
 
 if __name__ == "__main__":
