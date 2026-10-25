@@ -135,8 +135,8 @@ final class SurfaceView: UIView {
         let usableW = right - left
 
         let gw = min(150, usableW * 0.2), gh = usableH * 0.22
-        let R = usableH * 0.36
-        let hb = usableH * 0.2
+        let R = usableH * 0.22                              // wheel radius: about 44% of the screen height, like the sketch
+        let hb = usableH * 0.27                             // handbrake button
         let sw = min(110, usableW * 0.12)
         let th = usableH * 0.62, bh = usableH * 0.48      // brake slider is a bit shorter than throttle
         let wheelCY = bottom - R
@@ -145,7 +145,7 @@ final class SurfaceView: UIView {
             switch c.kind {
             case .gearDown: c.rect = CGRect(x: left, y: top, width: gw, height: gh)
             case .gearUp:   c.rect = CGRect(x: right - gw, y: top, width: gw, height: gh)
-            case .hand:     c.rect = CGRect(x: left + 2 * R + 16, y: wheelCY - R * 0.35 - hb / 2, width: hb, height: hb)
+            case .hand:     c.rect = CGRect(x: left + 2 * R + 18, y: wheelCY + R * 0.1 - hb, width: hb, height: hb)
             case .gas:      c.rect = CGRect(x: right - sw, y: bottom - th, width: sw, height: th)
             case .brake:    c.rect = CGRect(x: right - 2 * sw - 14, y: bottom - bh, width: sw, height: bh)
             case .wheel:    c.rect = CGRect(x: left, y: bottom - 2 * R, width: 2 * R, height: 2 * R)
@@ -216,7 +216,7 @@ final class SurfaceView: UIView {
         for c in controls {
             if c.kind == .wheel {
                 let dx = p.x - c.rect.midX, dy = p.y - c.rect.midY
-                if (dx * dx + dy * dy).squareRoot() <= c.rect.width / 2 * 1.1 { return c }
+                if (dx * dx + dy * dy).squareRoot() <= c.rect.width / 2 * 1.15 { return c }
             } else if c.hit.contains(p) {
                 return c
             }
